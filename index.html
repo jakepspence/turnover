@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turnover Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F3EE;
+    --card:#FFFFFF;
+    --ink:#2A2E2B;
+    --ink-soft:#6B7268;
+    --line:#DCD7CB;
+    --brass:#A9863E;
+    --brass-soft:#EFE4CB;
+    --coral:#B54B3A;
+    --coral-soft:#F3DDD7;
+    --sage:#5F7A5A;
+    --sage-soft:#DEE7DA;
+    --slate:#4F6B7A;
+    --slate-soft:#DCE6EA;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px 48px;}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--brass);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--sage);}
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(28px,7vw,38px);
+    margin:6px 0 2px;
+    line-height:1.05;
+  }
+  .subhead{color:var(--ink-soft);font-size:14px;margin-bottom:18px;}
+  .subhead button{
+    background:none;border:none;color:var(--brass);font:inherit;
+    text-decoration:underline;cursor:pointer;padding:0;
+  }
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:22px;
+  }
+  .panel h2{
+    font-family:'Fraunces', serif;
+    font-size:16px;
+    font-weight:600;
+    margin:0 0 4px;
+  }
+  .prop-block{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    margin-top:12px;
+    background:#FBFAF7;
+  }
+  .prop-block-head{
+    display:flex;align-items:center;gap:7px;margin-bottom:10px;
+  }
+  .prop-dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
+  .prop-block-head span{
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:.05em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .field{margin-bottom:12px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{
+    display:block;font-size:12px;color:var(--ink-soft);
+    margin-bottom:5px;font-family:'IBM Plex Mono', monospace;
+    letter-spacing:.02em;
+  }
+  .field input[type=text], .field input[type=url], .field input[type=number], .field textarea{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+    font-family:'Work Sans', sans-serif;
+    font-size:14px;
+    background:#FFFFFF;
+    color:var(--ink);
+  }
+  .field textarea{min-height:80px;font-family:'IBM Plex Mono',monospace;font-size:12px;resize:vertical;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .row > *{flex:1;min-width:100px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:none;border-radius:8px;padding:9px 14px;
+    font-family:'Work Sans', sans-serif;font-weight:600;font-size:13px;
+    cursor:pointer;
+  }
+  .btn-primary{background:var(--ink);color:#fff;}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+  .status-msg{font-size:12px;margin-top:8px;line-height:1.5;}
+  .status-msg.err{color:var(--coral);}
+  .status-msg.ok{color:var(--sage);}
+  details summary{cursor:pointer;font-size:12px;color:var(--brass);margin-top:10px;}
+  .panel-foot{
+    display:flex;gap:8px;margin-top:14px;
+  }
+
+  .line-section{margin-bottom:28px;}
+  .line-title{
+    font-family:'Fraunces', serif;font-size:18px;font-weight:600;margin:0 0 12px;
+  }
+  .clothesline{
+    position:relative;
+    display:flex;
+    gap:18px;
+    overflow-x:auto;
+    padding:22px 4px 10px;
+    scrollbar-width:none;
+  }
+  .clothesline::-webkit-scrollbar{display:none;}
+  .clothesline::before{
+    content:"";position:absolute;top:12px;left:0;right:0;height:2px;
+    background:repeating-linear-gradient(90deg,var(--line) 0 6px, transparent 6px 10px);
+  }
+  .tag{
+    flex:0 0 auto;width:136px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:4px 4px 10px 10px;
+    padding:14px 10px 12px;
+    position:relative;
+    box-shadow:0 1px 0 var(--line);
+  }
+  .tag::before{
+    content:"";position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+    width:9px;height:9px;border-radius:50%;
+    background:var(--bg);border:2px solid var(--ink-soft);
+  }
+  .tag.urgent{border-color:var(--coral);background:var(--coral-soft);}
+  .tag.done{border-color:var(--sage);background:var(--sage-soft);}
+  .tag .tprop{
+    display:flex;align-items:center;gap:5px;margin-bottom:5px;
+    font-family:'IBM Plex Mono', monospace;font-size:10px;letter-spacing:.03em;
+    text-transform:uppercase;color:var(--ink-soft);
+  }
+  .tag .tprop i{width:7px;height:7px;border-radius:50%;flex:0 0 auto;}
+  .tag .tdate{
+    font-family:'IBM Plex Mono', monospace;font-weight:600;font-size:13px;
+  }
+  .tag .tday{font-size:11px;color:var(--ink-soft);margin-bottom:6px;}
+  .tag .tguest{font-size:12px;margin-bottom:8px;line-height:1.3;}
+  .tag .tflag{
+    font-family:'IBM Plex Mono', monospace;font-size:10px;letter-spacing:.04em;
+    text-transform:uppercase;color:var(--coral);font-weight:600;
+  }
+  .tag.done .tflag{color:var(--sage);}
+  .empty-note{
+    color:var(--ink-soft);font-size:13px;padding:10px 2px;
+  }
+
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .cal-head h2{font-family:'Fraunces', serif;font-size:18px;font-weight:600;margin:0;}
+  .cal-nav{display:flex;gap:4px;}
+  .cal-nav button{
+    background:var(--card);border:1px solid var(--line);border-radius:6px;
+    width:28px;height:28px;cursor:pointer;color:var(--ink);font-size:14px;
+  }
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .dow{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-soft);text-align:center;padding-bottom:4px;}
+  .day{
+    aspect-ratio:1;background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:5px 4px;font-size:12px;position:relative;cursor:default;
+  }
+  .day.pad{background:transparent;border-color:transparent;}
+  .day .dnum{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);}
+  .day.clean{border-color:var(--brass);background:var(--brass-soft);cursor:pointer;}
+  .day.clean.done{border-color:var(--sage);background:var(--sage-soft);}
+  .day.clean.urgent{border-color:var(--coral);background:var(--coral-soft);}
+  .day .marks{position:absolute;bottom:5px;right:5px;display:flex;gap:2px;}
+  .day .marks i{width:6px;height:6px;border-radius:50%;display:inline-block;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+
+  .sheet-backdrop{
+    position:fixed;inset:0;background:rgba(20,20,18,.4);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .sheet-backdrop.open{display:flex;}
+  .sheet{
+    background:var(--bg);width:100%;max-width:720px;
+    border-radius:16px 16px 0 0;padding:18px 16px 26px;
+    max-height:80vh;overflow-y:auto;
+  }
+  .sheet .close{
+    float:right;background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;
+  }
+  .job-card{
+    border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;background:var(--card);
+  }
+  .job-card .jprop{
+    display:flex;align-items:center;gap:6px;margin-bottom:2px;
+    font-family:'IBM Plex Mono', monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .job-card .jprop i{width:8px;height:8px;border-radius:50%;}
+  .job-card h3{font-family:'Fraunces', serif;font-size:18px;margin:2px 0 2px;}
+  .job-card .jsub{font-size:12px;color:var(--ink-soft);margin-bottom:12px;}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .chip{
+    padding:6px 11px;border-radius:20px;border:1px solid var(--line);
+    font-size:12px;background:var(--bg);cursor:pointer;
+  }
+  .chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .toggle-done{
+    width:100%;padding:11px;border-radius:9px;border:none;font-weight:600;font-size:14px;
+    background:var(--sage);color:#fff;cursor:pointer;
+  }
+  .toggle-done.is-done{background:var(--bg);color:var(--sage);border:1px solid var(--sage);}
+  footer{text-align:center;color:var(--ink-soft);font-size:11px;margin-top:30px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow"><span class="dot"></span> SHARED WITH HOUSEHOLD</div>
+  <h1>Turnover Board</h1>
+  <div class="subhead" id="subhead">Set up your listings to start tracking cleanings — <button id="openSetup">open setup</button></div>
+
+  <div class="panel" id="setupPanel" style="display:none;">
+    <h2>Listings &amp; sync</h2>
+
+    <div class="prop-block" id="propBlock0"></div>
+    <div class="prop-block" id="propBlock1"></div>
+
+    <div class="panel-foot">
+      <button class="btn btn-primary" id="syncAllBtn">Sync all listings</button>
+      <button class="btn btn-ghost" id="saveConfigBtn">Save settings</button>
+    </div>
+    <div class="status-msg" id="syncStatus"></div>
+  </div>
+
+  <div class="line-section">
+    <div class="line-title">Next up</div>
+    <div class="clothesline" id="clothesline"></div>
+  </div>
+
+  <div class="cal-head">
+    <h2 id="calLabel">Month</h2>
+    <div class="cal-nav">
+      <button id="prevMonth">‹</button>
+      <button id="nextMonth">›</button>
+    </div>
+  </div>
+  <div class="grid" id="dowRow"></div>
+  <div class="grid" id="calGrid" style="margin-top:5px;"></div>
+  <div class="legend" id="legend"></div>
+
+  <footer>Reservations sync from each listing's Airbnb iCal feed · cleaning day = checkout date</footer>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop">
+  <div class="sheet">
+    <button class="close" id="sheetClose">✕</button>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<script>
+const SHARED = true;
+const KEY_CONFIG = 'turnover:config-v2';
+const KEY_RESERVATIONS = 'turnover:reservations-v2';
+const KEY_LOG = 'turnover:cleaning-log-v2';
+
+const PROP_COLORS = ['#A9863E', '#4F6B7A'];
+const PROP_COLOR_SOFT = ['var(--brass-soft)', 'var(--slate-soft)'];
+
+let config = {
+  properties: [
+    {id:'p0', name:'', icalUrl:''},
+    {id:'p1', name:'', icalUrl:''}
+  ],
+  cleaners:['Housekeeper']
+};
+let reservations = []; // {propertyId, checkin, checkout, guestLabel, uid}
+let log = {}; // "date|propertyId" -> {done:bool, assignedTo:string}
+let calCursor = new Date(); calCursor.setDate(1);
+
+async function loadAll(){
+  try{
+    const c = await window.storage.get(KEY_CONFIG, SHARED);
+    if(c && c.value){
+      const parsed = JSON.parse(c.value);
+      if(parsed.properties && parsed.properties.length) config = parsed;
+    }
+  }catch(e){}
+  try{
+    const r = await window.storage.get(KEY_RESERVATIONS, SHARED);
+    if(r && r.value) reservations = JSON.parse(r.value);
+  }catch(e){}
+  try{
+    const l = await window.storage.get(KEY_LOG, SHARED);
+    if(l && l.value) log = JSON.parse(l.value);
+  }catch(e){}
+  renderSetupBlocks();
+  hydrateSubhead();
+  render();
+}
+
+function propName(p, idx){
+  return (p.name && p.name.trim()) || ('Listing ' + (idx+1));
+}
+
+function renderSetupBlocks(){
+  config.properties.forEach((p, idx)=>{
+    const el = document.getElementById('propBlock'+idx);
+    el.innerHTML = `
+      <div class="prop-block-head">
+        <span class="prop-dot" style="background:${PROP_COLORS[idx]}"></span>
+        <span>Listing ${idx+1}</span>
+      </div>
+      <div class="field">
+        <label>Property name</label>
+        <input type="text" data-idx="${idx}" class="propNameInput" placeholder="e.g. Coyote Creek Cabin" value="${escapeAttr(p.name)}">
+      </div>
+      <div class="field">
+        <label>Airbnb iCal export URL</label>
+        <input type="url" data-idx="${idx}" class="propUrlInput" placeholder="https://www.airbnb.com/calendar/ical/..." value="${escapeAttr(p.icalUrl)}">
+      </div>
+      <div class="row">
+        <button class="btn btn-ghost syncOneBtn" data-idx="${idx}">Sync this listing</button>
+      </div>
+      <details>
+        <summary>Sync blocked? Paste the calendar manually</summary>
+        <div class="field" style="margin-top:10px;">
+          <label>Paste raw .ics content for this listing</label>
+          <textarea class="propPasteInput" data-idx="${idx}" placeholder="BEGIN:VCALENDAR ..."></textarea>
+        </div>
+        <button class="btn btn-ghost parsePasteBtn" data-idx="${idx}">Parse pasted calendar</button>
+      </details>
+    `;
+  });
+  document.querySelectorAll('.syncOneBtn').forEach(btn=>{
+    btn.onclick = ()=> syncOne(Number(btn.dataset.idx));
+  });
+  document.querySelectorAll('.parsePasteBtn').forEach(btn=>{
+    btn.onclick = ()=> parsePasteFor(Number(btn.dataset.idx));
+  });
+}
+
+function hydrateSubhead(){
+  const names = config.properties.map((p,i)=>propName(p,i).trim()).filter((n,i)=> config.properties[i].name);
+  if(names.length){
+    document.getElementById('subhead').innerHTML =
+      names.join(' &amp; ') + ' · <button id="openSetup2">edit setup</button>';
+    document.getElementById('openSetup2').onclick = toggleSetup;
+  } else {
+    document.getElementById('setupPanel').style.display = 'block';
+  }
+}
+
+function readFormIntoConfig(){
+  document.querySelectorAll('.propNameInput').forEach(inp=>{
+    config.properties[Number(inp.dataset.idx)].name = inp.value.trim();
+  });
+  document.querySelectorAll('.propUrlInput').forEach(inp=>{
+    config.properties[Number(inp.dataset.idx)].icalUrl = inp.value.trim();
+  });
+}
+
+async function saveConfig(){
+  readFormIntoConfig();
+  try{
+    const res = await window.storage.set(KEY_CONFIG, JSON.stringify(config), SHARED);
+    if(!res) throw new Error('no result');
+    setStatus('Settings saved.', 'ok');
+    hydrateSubhead();
+    render();
+  }catch(e){
+    setStatus('Could not save settings — try again.', 'err');
+  }
+}
+
+function setStatus(msg, cls){
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.className = 'status-msg ' + (cls||'');
+}
+
+function toggleSetup(){
+  const p = document.getElementById('setupPanel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+document.getElementById('openSetup').onclick = toggleSetup;
+document.getElementById('saveConfigBtn').onclick = saveConfig;
+
+function parseICS(text){
+  const events = [];
+  const blocks = text.split('BEGIN:VEVENT').slice(1);
+  for(const block of blocks){
+    const body = block.split('END:VEVENT')[0];
+    const lines = body.replace(/\r/g,'').split('\n');
+    let dtstart=null, dtend=null, summary='Reservation', uid='';
+    for(let i=0;i<lines.length;i++){
+      let line = lines[i];
+      while(lines[i+1] && /^[ \t]/.test(lines[i+1])){
+        i++; line += lines[i].slice(1);
+      }
+      if(line.startsWith('DTSTART')) dtstart = extractDate(line);
+      else if(line.startsWith('DTEND')) dtend = extractDate(line);
+      else if(line.startsWith('SUMMARY')) summary = line.split(':').slice(1).join(':').trim() || summary;
+      else if(line.startsWith('UID')) uid = line.split(':').slice(1).join(':').trim();
+    }
+    if(dtstart && dtend){
+      events.push({checkin:dtstart, checkout:dtend, guestLabel:summary, uid: uid || (dtstart+dtend)});
+    }
+  }
+  return events;
+}
+function extractDate(line){
+  const val = line.split(':').pop().trim();
+  const m = val.match(/^(\d{4})(\d{2})(\d{2})/);
+  if(!m) return null;
+  return m[1]+'-'+m[2]+'-'+m[3];
+}
+
+async function syncOne(idx){
+  readFormIntoConfig();
+  const p = config.properties[idx];
+  if(!p.icalUrl){ setStatus('Add an iCal URL for ' + propName(p,idx) + ' first.', 'err'); return; }
+  setStatus('Syncing ' + propName(p,idx) + '…', '');
+  try{
+    const res = await fetch(p.icalUrl, {mode:'cors'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const text = await res.text();
+    const events = parseICS(text).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
+    await mergeReservations(p.id, events);
+    setStatus('Synced ' + events.length + ' reservation(s) for ' + propName(p,idx) + '.', 'ok');
+  }catch(e){
+    setStatus(propName(p,idx) + ': direct sync was blocked (Airbnb\\'s feed usually can\\'t be fetched from a browser). Open its .ics link in a new tab, copy the contents, and use "paste manually" below for this listing.', 'err');
+  }
+}
+
+async function syncAll(){
+  readFormIntoConfig();
+  for(let idx=0; idx<config.properties.length; idx++){
+    if(config.properties[idx].icalUrl) await syncOne(idx);
+  }
+}
+document.getElementById('syncAllBtn').onclick = syncAll;
+
+async function parsePasteFor(idx){
+  readFormIntoConfig();
+  const p = config.properties[idx];
+  const raw = document.querySelector('.propPasteInput[data-idx="'+idx+'"]').value;
+  if(!raw.includes('BEGIN:VEVENT')){ setStatus('That doesn\\'t look like calendar (.ics) content.', 'err'); return; }
+  const events = parseICS(raw).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
+  await mergeReservations(p.id, events);
+  setStatus('Parsed ' + events.length + ' reservation(s) for ' + propName(p,idx) + ' from pasted calendar.', 'ok');
+}
+
+async function mergeReservations(propertyId, events){
+  reservations = reservations.filter(r => r.propertyId !== propertyId).concat(events);
+  try{
+    await window.storage.set(KEY_RESERVATIONS, JSON.stringify(reservations), SHARED);
+  }catch(e){}
+  render();
+}
+
+function propIndex(propertyId){
+  return config.properties.findIndex(p=>p.id===propertyId);
+}
+
+function cleaningDays(){
+  // date -> array of {propertyId, guest, sameDayTurn}
+  const map = {};
+  const checkinsByDate = {};
+  for(const r of reservations){
+    if(!checkinsByDate[r.checkin]) checkinsByDate[r.checkin] = new Set();
+    checkinsByDate[r.checkin].add(r.propertyId);
+  }
+  for(const r of reservations){
+    const key = r.checkout;
+    if(!map[key]) map[key] = [];
+    if(map[key].some(e=>e.propertyId===r.propertyId)) continue;
+    map[key].push({
+      date: r.checkout,
+      propertyId: r.propertyId,
+      guest: r.guestLabel,
+      sameDayTurn: checkinsByDate[r.checkout] ? checkinsByDate[r.checkout].has(r.propertyId) : false
+    });
+  }
+  return map;
+}
+
+function fmtDay(dstr){
+  return new Date(dstr+'T00:00:00').toLocaleDateString(undefined,{weekday:'short'});
+}
+function fmtShort(dstr){
+  return new Date(dstr+'T00:00:00').toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+
+function render(){
+  renderLegend();
+  renderClothesline();
+  renderCalendar();
+}
+
+function renderLegend(){
+  const el = document.getElementById('legend');
+  const propBits = config.properties.map((p,i)=> p.name ?
+    `<span><i style="background:${PROP_COLORS[i]}"></i> ${escapeHtml(propName(p,i))}</span>` : '').join('');
+  el.innerHTML = propBits +
+    '<span><i style="background:var(--coral)"></i> Same-day turn</span>' +
+    '<span><i style="background:var(--sage)"></i> Done</span>';
+}
+
+function renderClothesline(){
+  const cd = cleaningDays();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const upcoming = Object.values(cd).flat()
+    .filter(c => new Date(c.date+'T00:00:00') >= today)
+    .sort((a,b)=> a.date.localeCompare(b.date))
+    .slice(0,12);
+  const el = document.getElementById('clothesline');
+  el.innerHTML = '';
+  if(upcoming.length===0){
+    el.innerHTML = '<div class="empty-note">No upcoming checkouts yet — sync your listings above.</div>';
+    return;
+  }
+  for(const c of upcoming){
+    const idx = propIndex(c.propertyId);
+    const entry = log[c.date+'|'+c.propertyId] || {};
+    const div = document.createElement('div');
+    div.className = 'tag' + (entry.done ? ' done' : (c.sameDayTurn ? ' urgent' : ''));
+    div.innerHTML = `
+      <div class="tprop"><i style="background:${PROP_COLORS[idx]||'#999'}"></i>${escapeHtml(propName(config.properties[idx]||{},idx))}</div>
+      <div class="tday">${fmtDay(c.date)}</div>
+      <div class="tdate">${fmtShort(c.date)}</div>
+      <div class="tguest">${escapeHtml(c.guest)}</div>
+      <div class="tflag">${entry.done ? 'Done' : (c.sameDayTurn ? 'Same-day turn' : 'Checkout clean')}</div>
+    `;
+    div.onclick = ()=> openSheet(c.date);
+    el.appendChild(div);
+  }
+}
+
+function renderCalendar(){
+  const dow = document.getElementById('dowRow');
+  dow.innerHTML = ['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
+
+  document.getElementById('calLabel').textContent = calCursor.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+  const cd = cleaningDays();
+  const year = calCursor.getFullYear(), month = calCursor.getMonth();
+  const firstDow = new Date(year,month,1).getDay();
+  const daysInMonth = new Date(year,month+1,0).getDate();
+
+  for(let i=0;i<firstDow;i++){
+    const pad = document.createElement('div'); pad.className='day pad'; grid.appendChild(pad);
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = year+'-'+String(month+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const cell = document.createElement('div');
+    cell.className = 'day';
+    const entries = cd[dateStr];
+    if(entries && entries.length){
+      cell.classList.add('clean');
+      const anyUrgent = entries.some(e=>e.sameDayTurn && !(log[e.date+'|'+e.propertyId]||{}).done);
+      const allDone = entries.every(e=> (log[e.date+'|'+e.propertyId]||{}).done);
+      if(allDone) cell.classList.add('done');
+      else if(anyUrgent) cell.classList.add('urgent');
+      const marks = entries.map(e=>{
+        const idx = propIndex(e.propertyId);
+        return `<i style="background:${PROP_COLORS[idx]||'#999'}"></i>`;
+      }).join('');
+      cell.innerHTML = `<div class="dnum">${d}</div><div class="marks">${marks}</div>`;
+      cell.onclick = ()=> openSheet(dateStr);
+    } else {
+      cell.innerHTML = `<div class="dnum">${d}</div>`;
+    }
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('prevMonth').onclick = ()=>{ calCursor.setMonth(calCursor.getMonth()-1); renderCalendar(); };
+document.getElementById('nextMonth').onclick = ()=>{ calCursor.setMonth(calCursor.getMonth()+1); renderCalendar(); };
+
+function openSheet(dateStr){
+  const cd = cleaningDays();
+  const entries = cd[dateStr] || [];
+  const d = new Date(dateStr+'T00:00:00');
+  const dateLabel = d.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric'});
+
+  const body = document.getElementById('sheetBody');
+  body.innerHTML = '';
+  const header = document.createElement('div');
+  header.innerHTML = `<h3 style="font-family:'Fraunces',serif;font-size:19px;margin:0 0 2px;">${dateLabel}</h3>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--ink-soft);margin-bottom:14px;">
+      ${entries.length} cleaning job${entries.length===1?'':'s'}
+    </div>`;
+  body.appendChild(header);
+
+  entries.forEach(entry=>{
+    const idx = propIndex(entry.propertyId);
+    const color = PROP_COLORS[idx] || '#999';
+    const key = entry.date+'|'+entry.propertyId;
+    const logEntry = log[key] || {};
+    const card = document.createElement('div');
+    card.className = 'job-card';
+    card.innerHTML = `
+      <div class="jprop" style="color:${color}"><i style="background:${color}"></i>${escapeHtml(propName(config.properties[idx]||{},idx))}</div>
+      <h3>Cleaning</h3>
+      <div class="jsub">${escapeHtml(entry.guest)}${entry.sameDayTurn ? ' · same-day turn' : ''}</div>
+      <div class="chip-row"></div>
+      <button class="toggle-done ${logEntry.done?'is-done':''}">${logEntry.done ? 'Marked done — tap to undo' : 'Mark cleaning done'}</button>
+    `;
+    const chipRow = card.querySelector('.chip-row');
+    config.cleaners.forEach(name=>{
+      const chip = document.createElement('div');
+      chip.className = 'chip' + (logEntry.assignedTo===name ? ' active' : '');
+      chip.textContent = name;
+      chip.onclick = async ()=>{
+        log[key] = Object.assign({}, log[key], {assignedTo:name});
+        await saveLog();
+        openSheet(dateStr);
+      };
+      chipRow.appendChild(chip);
+    });
+    card.querySelector('.toggle-done').onclick = async ()=>{
+      log[key] = Object.assign({}, log[key], {done: !logEntry.done});
+      await saveLog();
+      render();
+      openSheet(dateStr);
+    };
+    body.appendChild(card);
+  });
+
+  document.getElementById('sheetBackdrop').classList.add('open');
+}
+document.getElementById('sheetClose').onclick = ()=> document.getElementById('sheetBackdrop').classList.remove('open');
+document.getElementById('sheetBackdrop').onclick = (e)=>{ if(e.target.id==='sheetBackdrop') e.currentTarget.classList.remove('open'); };
+
+async function saveLog(){
+  try{ await window.storage.set(KEY_LOG, JSON.stringify(log), SHARED); }catch(e){}
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML;
+}
+function escapeAttr(s){
+  return (s||'').replace(/"/g,'&quot;');
+}
+
+loadAll();
+</script>
+</body>
+</html>
