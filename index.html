@@ -281,6 +281,18 @@
 </div>
 
 <script>
+/* ============================================================
+   PASTE YOUR AIRBNB ICAL LINKS HERE
+   (Airbnb: Calendar → Availability → Export calendar)
+   Fill in the URL fields below — name is optional.
+   ============================================================ */
+const LISTING_1_NAME = "";
+const LISTING_1_ICAL_URL = "";
+
+const LISTING_2_NAME = "";
+const LISTING_2_ICAL_URL = "";
+/* ============================================================ */
+
 const SHARED = true;
 const KEY_CONFIG = 'turnover:config-v2';
 const KEY_RESERVATIONS = 'turnover:reservations-v2';
@@ -291,8 +303,8 @@ const PROP_COLOR_SOFT = ['var(--brass-soft)', 'var(--slate-soft)'];
 
 let config = {
   properties: [
-    {id:'p0', name:'', icalUrl:''},
-    {id:'p1', name:'', icalUrl:''}
+    {id:'p0', name: LISTING_1_NAME, icalUrl: LISTING_1_ICAL_URL},
+    {id:'p1', name: LISTING_2_NAME, icalUrl: LISTING_2_ICAL_URL}
   ],
   cleaners:['Housekeeper']
 };
@@ -308,6 +320,11 @@ async function loadAll(){
       if(parsed.properties && parsed.properties.length) config = parsed;
     }
   }catch(e){}
+  // Hardcoded links at the top of the file always win over whatever was saved before
+  if(LISTING_1_ICAL_URL){ config.properties[0].icalUrl = LISTING_1_ICAL_URL; }
+  if(LISTING_1_NAME){ config.properties[0].name = LISTING_1_NAME; }
+  if(LISTING_2_ICAL_URL){ config.properties[1].icalUrl = LISTING_2_ICAL_URL; }
+  if(LISTING_2_NAME){ config.properties[1].name = LISTING_2_NAME; }
   try{
     const r = await window.storage.get(KEY_RESERVATIONS, SHARED);
     if(r && r.value) reservations = JSON.parse(r.value);
@@ -319,6 +336,10 @@ async function loadAll(){
   renderSetupBlocks();
   hydrateSubhead();
   render();
+  if(LISTING_1_ICAL_URL || LISTING_2_ICAL_URL){
+    await saveConfig();
+    await syncAll();
+  }
 }
 
 function propName(p, idx){
