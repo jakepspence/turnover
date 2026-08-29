@@ -239,7 +239,7 @@
 
   <div class="eyebrow"><span class="dot"></span> SHARED WITH HOUSEHOLD</div>
   <h1>Turnover Board</h1>
-  <div class="subhead" id="subhead">Set up your listings to start tracking cleanings — <button id="openSetup">open setup</button></div>
+  <div class="subhead"><span id="subheadText">Set up your listings to start tracking cleanings</span> — <button id="openSetup">open setup</button></div>
 
   <div class="panel" id="setupPanel" style="display:none;">
     <h2>Listings &amp; sync</h2>
@@ -318,6 +318,12 @@ async function loadAll(){
   }catch(e){}
   renderSetupBlocks();
   hydrateSubhead();
+  // first-time setup: no listings saved yet, so open the panel automatically
+  const anyNamed = config.properties.some(p => p.name && p.name.trim());
+  if(!anyNamed){
+    document.getElementById('setupPanel').style.display = 'block';
+    document.getElementById('openSetup').textContent = 'close setup';
+  }
   render();
 }
 
@@ -364,13 +370,9 @@ function renderSetupBlocks(){
 
 function hydrateSubhead(){
   const names = config.properties.map((p,i)=>propName(p,i).trim()).filter((n,i)=> config.properties[i].name);
-  if(names.length){
-    document.getElementById('subhead').innerHTML =
-      names.join(' &amp; ') + ' · <button id="openSetup2">edit setup</button>';
-    document.getElementById('openSetup2').onclick = toggleSetup;
-  } else {
-    document.getElementById('setupPanel').style.display = 'block';
-  }
+  document.getElementById('subheadText').textContent = names.length
+    ? names.join(' & ')
+    : 'Set up your listings to start tracking cleanings';
 }
 
 function readFormIntoConfig(){
@@ -403,7 +405,9 @@ function setStatus(msg, cls){
 
 function toggleSetup(){
   const p = document.getElementById('setupPanel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  const opening = p.style.display === 'none' || !p.style.display;
+  p.style.display = opening ? 'block' : 'none';
+  document.getElementById('openSetup').textContent = opening ? 'close setup' : 'open setup';
 }
 document.getElementById('openSetup').onclick = toggleSetup;
 document.getElementById('saveConfigBtn').onclick = saveConfig;
