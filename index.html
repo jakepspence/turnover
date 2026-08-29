@@ -239,9 +239,9 @@
 
   <div class="eyebrow"><span class="dot"></span> SHARED WITH HOUSEHOLD</div>
   <h1>Turnover Board</h1>
-  <div class="subhead"><span id="subheadText">Set up your listings to start tracking cleanings</span> — <button id="openSetup">open setup</button></div>
+  <div class="subhead" id="subheadText">Set up your listings to start tracking cleanings</div>
 
-  <div class="panel" id="setupPanel" style="display:none;">
+  <div class="panel" id="setupPanel">
     <h2>Listings &amp; sync</h2>
 
     <div class="prop-block" id="propBlock0"></div>
@@ -318,12 +318,6 @@ async function loadAll(){
   }catch(e){}
   renderSetupBlocks();
   hydrateSubhead();
-  // first-time setup: no listings saved yet, so open the panel automatically
-  const anyNamed = config.properties.some(p => p.name && p.name.trim());
-  if(!anyNamed){
-    document.getElementById('setupPanel').style.display = 'block';
-    document.getElementById('openSetup').textContent = 'close setup';
-  }
   render();
 }
 
@@ -403,13 +397,6 @@ function setStatus(msg, cls){
   el.className = 'status-msg ' + (cls||'');
 }
 
-function toggleSetup(){
-  const p = document.getElementById('setupPanel');
-  const opening = p.style.display === 'none' || !p.style.display;
-  p.style.display = opening ? 'block' : 'none';
-  document.getElementById('openSetup').textContent = opening ? 'close setup' : 'open setup';
-}
-document.getElementById('openSetup').onclick = toggleSetup;
 document.getElementById('saveConfigBtn').onclick = saveConfig;
 
 function parseICS(text){
