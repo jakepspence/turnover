@@ -50,11 +50,10 @@
     margin:6px 0 2px;
     line-height:1.05;
   }
-  .subhead{color:var(--ink-soft);font-size:14px;margin-bottom:18px;}
-  .subhead button{
-    background:none;border:none;color:var(--brass);font:inherit;
-    text-decoration:underline;cursor:pointer;padding:0;
-  }
+  .subhead{color:var(--ink-soft);font-size:14px;margin-bottom:4px;}
+  .sync-note{font-family:'IBM Plex Mono', monospace;font-size:11px;color:var(--ink-soft);margin-bottom:18px;}
+  .sync-note.err{color:var(--coral);}
+  .sync-note.ok{color:var(--sage);}
 
   .panel{
     background:var(--card);
@@ -240,19 +239,7 @@
   <div class="eyebrow"><span class="dot"></span> SHARED WITH HOUSEHOLD</div>
   <h1>Turnover Board</h1>
   <div class="subhead" id="subheadText">Set up your listings to start tracking cleanings</div>
-
-  <div class="panel" id="setupPanel">
-    <h2>Listings &amp; sync</h2>
-
-    <div class="prop-block" id="propBlock0"></div>
-    <div class="prop-block" id="propBlock1"></div>
-
-    <div class="panel-foot">
-      <button class="btn btn-primary" id="syncAllBtn">Sync all listings</button>
-      <button class="btn btn-ghost" id="saveConfigBtn">Save settings</button>
-    </div>
-    <div class="status-msg" id="syncStatus"></div>
-  </div>
+  <div class="sync-note" id="syncStatus"></div>
 
   <div class="line-section">
     <div class="line-title">Next up</div>
@@ -286,10 +273,10 @@
    (Airbnb: Calendar → Availability → Export calendar)
    Fill in the URL fields below — name is optional.
    ============================================================ */
-const LISTING_1_NAME = "Cascadia";
+const LISTING_1_NAME = "";
 const LISTING_1_ICAL_URL = "https://www.airbnb.com/calendar/ical/19663203.ics?t=7ddfbb8711644b8db028e182cf676065&locale=en";
 
-const LISTING_2_NAME = "Fall Creek";
+const LISTING_2_NAME = "";
 const LISTING_2_ICAL_URL = "https://www.airbnb.com/calendar/ical/16351460.ics?t=a6b28bece98e4f70ae55d6d5ac42e260&locale=en";
 /* ============================================================ */
 
@@ -333,7 +320,6 @@ async function loadAll(){
     const l = await window.storage.get(KEY_LOG, SHARED);
     if(l && l.value) log = JSON.parse(l.value);
   }catch(e){}
-  renderSetupBlocks();
   hydrateSubhead();
   render();
   if(LISTING_1_ICAL_URL || LISTING_2_ICAL_URL){
@@ -346,43 +332,6 @@ function propName(p, idx){
   return (p.name && p.name.trim()) || ('Listing ' + (idx+1));
 }
 
-function renderSetupBlocks(){
-  config.properties.forEach((p, idx)=>{
-    const el = document.getElementById('propBlock'+idx);
-    el.innerHTML = `
-      <div class="prop-block-head">
-        <span class="prop-dot" style="background:${PROP_COLORS[idx]}"></span>
-        <span>Listing ${idx+1}</span>
-      </div>
-      <div class="field">
-        <label>Property name</label>
-        <input type="text" data-idx="${idx}" class="propNameInput" placeholder="e.g. Coyote Creek Cabin" value="${escapeAttr(p.name)}">
-      </div>
-      <div class="field">
-        <label>Airbnb iCal export URL</label>
-        <input type="url" data-idx="${idx}" class="propUrlInput" placeholder="https://www.airbnb.com/calendar/ical/..." value="${escapeAttr(p.icalUrl)}">
-      </div>
-      <div class="row">
-        <button class="btn btn-ghost syncOneBtn" data-idx="${idx}">Sync this listing</button>
-      </div>
-      <details>
-        <summary>Sync blocked? Paste the calendar manually</summary>
-        <div class="field" style="margin-top:10px;">
-          <label>Paste raw .ics content for this listing</label>
-          <textarea class="propPasteInput" data-idx="${idx}" placeholder="BEGIN:VCALENDAR ..."></textarea>
-        </div>
-        <button class="btn btn-ghost parsePasteBtn" data-idx="${idx}">Parse pasted calendar</button>
-      </details>
-    `;
-  });
-  document.querySelectorAll('.syncOneBtn').forEach(btn=>{
-    btn.onclick = ()=> syncOne(Number(btn.dataset.idx));
-  });
-  document.querySelectorAll('.parsePasteBtn').forEach(btn=>{
-    btn.onclick = ()=> parsePasteFor(Number(btn.dataset.idx));
-  });
-}
-
 function hydrateSubhead(){
   const names = config.properties.map((p,i)=>propName(p,i).trim()).filter((n,i)=> config.properties[i].name);
   document.getElementById('subheadText').textContent = names.length
@@ -390,35 +339,22 @@ function hydrateSubhead(){
     : 'Set up your listings to start tracking cleanings';
 }
 
-function readFormIntoConfig(){
-  document.querySelectorAll('.propNameInput').forEach(inp=>{
-    config.properties[Number(inp.dataset.idx)].name = inp.value.trim();
-  });
-  document.querySelectorAll('.propUrlInput').forEach(inp=>{
-    config.properties[Number(inp.dataset.idx)].icalUrl = inp.value.trim();
-  });
-}
-
 async function saveConfig(){
-  readFormIntoConfig();
   try{
     const res = await window.storage.set(KEY_CONFIG, JSON.stringify(config), SHARED);
     if(!res) throw new Error('no result');
-    setStatus('Settings saved.', 'ok');
     hydrateSubhead();
     render();
   }catch(e){
-    setStatus('Could not save settings — try again.', 'err');
+    setStatus('Could not save settings.', 'err');
   }
 }
 
 function setStatus(msg, cls){
   const el = document.getElementById('syncStatus');
   el.textContent = msg;
-  el.className = 'status-msg ' + (cls||'');
+  el.className = 'sync-note ' + (cls||'');
 }
-
-document.getElementById('saveConfigBtn').onclick = saveConfig;
 
 function parseICS(text){
   const events = [];
@@ -451,38 +387,25 @@ function extractDate(line){
 }
 
 async function syncOne(idx){
-  readFormIntoConfig();
   const p = config.properties[idx];
-  if(!p.icalUrl){ setStatus('Add an iCal URL for ' + propName(p,idx) + ' first.', 'err'); return; }
-  setStatus('Syncing ' + propName(p,idx) + '…', '');
+  if(!p.icalUrl){ return; }
+  setStatus('Syncing…', '');
   try{
     const res = await fetch(p.icalUrl, {mode:'cors'});
     if(!res.ok) throw new Error('HTTP '+res.status);
     const text = await res.text();
     const events = parseICS(text).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
     await mergeReservations(p.id, events);
-    setStatus('Synced ' + events.length + ' reservation(s) for ' + propName(p,idx) + '.', 'ok');
+    setStatus('Synced just now.', 'ok');
   }catch(e){
-    setStatus(propName(p,idx) + ': direct sync was blocked (Airbnb\\'s feed usually can\\'t be fetched from a browser). Open its .ics link in a new tab, copy the contents, and use "paste manually" below for this listing.', 'err');
+    setStatus("Couldn't reach the latest booking data — showing the last synced version.", 'err');
   }
 }
 
 async function syncAll(){
-  readFormIntoConfig();
   for(let idx=0; idx<config.properties.length; idx++){
     if(config.properties[idx].icalUrl) await syncOne(idx);
   }
-}
-document.getElementById('syncAllBtn').onclick = syncAll;
-
-async function parsePasteFor(idx){
-  readFormIntoConfig();
-  const p = config.properties[idx];
-  const raw = document.querySelector('.propPasteInput[data-idx="'+idx+'"]').value;
-  if(!raw.includes('BEGIN:VEVENT')){ setStatus('That doesn\\'t look like calendar (.ics) content.', 'err'); return; }
-  const events = parseICS(raw).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
-  await mergeReservations(p.id, events);
-  setStatus('Parsed ' + events.length + ' reservation(s) for ' + propName(p,idx) + ' from pasted calendar.', 'ok');
 }
 
 async function mergeReservations(propertyId, events){
