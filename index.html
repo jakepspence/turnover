@@ -276,13 +276,18 @@
     must be set to public for this to work)
    Fill in the URL fields below — name is optional.
    ============================================================ */
-const LISTING_1_NAME = "Cascadia";
+const LISTING_1_NAME = "";
 const LISTING_1_ICAL_URL = "https://www.airbnb.com/calendar/ical/19663203.ics?t=7ddfbb8711644b8db028e182cf676065&locale=en";
-const LISTING_1_GCAL_BACKUP_URL = "https://calendar.google.com/calendar/ical/7lnfhjorfnk0d89aluo1eean3k521fhv%40import.calendar.google.com/public/basic.ics";
+const LISTING_1_GCAL_BACKUP_URL = "";
 
-const LISTING_2_NAME = "Fall Creek";
+const LISTING_2_NAME = "";
 const LISTING_2_ICAL_URL = "https://www.airbnb.com/calendar/ical/16351460.ics?t=a6b28bece98e4f70ae55d6d5ac42e260&locale=en";
-const LISTING_2_GCAL_BACKUP_URL = "https://calendar.google.com/calendar/ical/sgp51l3skosqsubsnmegdm974fbnkrgi%40import.calendar.google.com/public/basic.ics";
+const LISTING_2_GCAL_BACKUP_URL = "";
+
+// Google Apps Script Web App URL (ends in /exec). Fetches Airbnb data
+// server-side so it isn't blocked by the browser's CORS restriction.
+// Leave blank until you've deployed the proxy script.
+const PROXY_BASE_URL = "https://script.google.com/macros/s/AKfycbzCVMj7EJ5NCSakzICZJMnxeIfCME7UAXVgbkmWyQYAvRqKzlrFt9q0eiAVtrH0dS6oSQ/exec";
 /* ============================================================ */
 
 const SHARED = true;
@@ -329,7 +334,7 @@ async function loadAll(){
   }catch(e){}
   hydrateSubhead();
   render();
-  if(LISTING_1_ICAL_URL || LISTING_2_ICAL_URL || LISTING_1_GCAL_BACKUP_URL || LISTING_2_GCAL_BACKUP_URL){
+  if(LISTING_1_ICAL_URL || LISTING_2_ICAL_URL || LISTING_1_GCAL_BACKUP_URL || LISTING_2_GCAL_BACKUP_URL || PROXY_BASE_URL){
     await saveConfig();
     await syncAll();
   }
@@ -395,8 +400,24 @@ function extractDate(line){
 
 async function syncOne(idx){
   const p = config.properties[idx];
-  if(!p.icalUrl && !p.gcalIcalUrl){ return; }
+  if(!p.icalUrl && !p.gcalIcalUrl && !PROXY_BASE_URL){ return; }
   setStatus('Syncing…', '');
+
+  if(PROXY_BASE_URL){
+    try{
+      const proxyUrl = PROXY_BASE_URL + (PROXY_BASE_URL.includes('?') ? '&' : '?') + 'listing=' + (idx+1);
+      const res = await fetch(proxyUrl);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const text = await res.text();
+      if(!text.includes('BEGIN:VEVENT')) throw new Error('proxy did not return calendar data');
+      const events = parseICS(text).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
+      await mergeReservations(p.id, events);
+      setStatus('Synced just now.', 'ok');
+      return;
+    }catch(e){
+      // fall through to direct fetch below
+    }
+  }
 
   if(p.icalUrl){
     try{
@@ -432,7 +453,7 @@ async function syncOne(idx){
 async function syncAll(){
   for(let idx=0; idx<config.properties.length; idx++){
     const p = config.properties[idx];
-    if(p.icalUrl || p.gcalIcalUrl) await syncOne(idx);
+    if(p.icalUrl || p.gcalIcalUrl || PROXY_BASE_URL) await syncOne(idx);
   }
 }
 
