@@ -269,15 +269,20 @@
 
 <script>
 /* ============================================================
-   PASTE YOUR AIRBNB ICAL LINKS HERE
+   PASTE YOUR CALENDAR LINKS HERE
    (Airbnb: Calendar → Availability → Export calendar)
+   (Google Calendar backup: Settings → your calendar → Integrate
+    calendar → "Public address in iCal format" — the calendar
+    must be set to public for this to work)
    Fill in the URL fields below — name is optional.
    ============================================================ */
 const LISTING_1_NAME = "";
 const LISTING_1_ICAL_URL = "https://www.airbnb.com/calendar/ical/19663203.ics?t=7ddfbb8711644b8db028e182cf676065&locale=en";
+const LISTING_1_GCAL_BACKUP_URL = "";
 
 const LISTING_2_NAME = "";
 const LISTING_2_ICAL_URL = "https://www.airbnb.com/calendar/ical/16351460.ics?t=a6b28bece98e4f70ae55d6d5ac42e260&locale=en";
+const LISTING_2_GCAL_BACKUP_URL = "";
 /* ============================================================ */
 
 const SHARED = true;
@@ -290,8 +295,8 @@ const PROP_COLOR_SOFT = ['var(--brass-soft)', 'var(--slate-soft)'];
 
 let config = {
   properties: [
-    {id:'p0', name: LISTING_1_NAME, icalUrl: LISTING_1_ICAL_URL},
-    {id:'p1', name: LISTING_2_NAME, icalUrl: LISTING_2_ICAL_URL}
+    {id:'p0', name: LISTING_1_NAME, icalUrl: LISTING_1_ICAL_URL, gcalIcalUrl: LISTING_1_GCAL_BACKUP_URL},
+    {id:'p1', name: LISTING_2_NAME, icalUrl: LISTING_2_ICAL_URL, gcalIcalUrl: LISTING_2_GCAL_BACKUP_URL}
   ],
   cleaners:['Housekeeper']
 };
@@ -310,8 +315,10 @@ async function loadAll(){
   // Hardcoded links at the top of the file always win over whatever was saved before
   if(LISTING_1_ICAL_URL){ config.properties[0].icalUrl = LISTING_1_ICAL_URL; }
   if(LISTING_1_NAME){ config.properties[0].name = LISTING_1_NAME; }
+  if(LISTING_1_GCAL_BACKUP_URL){ config.properties[0].gcalIcalUrl = LISTING_1_GCAL_BACKUP_URL; }
   if(LISTING_2_ICAL_URL){ config.properties[1].icalUrl = LISTING_2_ICAL_URL; }
   if(LISTING_2_NAME){ config.properties[1].name = LISTING_2_NAME; }
+  if(LISTING_2_GCAL_BACKUP_URL){ config.properties[1].gcalIcalUrl = LISTING_2_GCAL_BACKUP_URL; }
   try{
     const r = await window.storage.get(KEY_RESERVATIONS, SHARED);
     if(r && r.value) reservations = JSON.parse(r.value);
@@ -322,7 +329,7 @@ async function loadAll(){
   }catch(e){}
   hydrateSubhead();
   render();
-  if(LISTING_1_ICAL_URL || LISTING_2_ICAL_URL){
+  if(LISTING_1_ICAL_URL || LISTING_2_ICAL_URL || LISTING_1_GCAL_BACKUP_URL || LISTING_2_GCAL_BACKUP_URL){
     await saveConfig();
     await syncAll();
   }
@@ -388,23 +395,44 @@ function extractDate(line){
 
 async function syncOne(idx){
   const p = config.properties[idx];
-  if(!p.icalUrl){ return; }
+  if(!p.icalUrl && !p.gcalIcalUrl){ return; }
   setStatus('Syncing…', '');
-  try{
-    const res = await fetch(p.icalUrl, {mode:'cors'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const text = await res.text();
-    const events = parseICS(text).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
-    await mergeReservations(p.id, events);
-    setStatus('Synced just now.', 'ok');
-  }catch(e){
-    setStatus("Couldn't reach the latest booking data — showing the last synced version.", 'err');
+
+  if(p.icalUrl){
+    try{
+      const res = await fetch(p.icalUrl, {mode:'cors'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const text = await res.text();
+      const events = parseICS(text).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':'+e.uid}));
+      await mergeReservations(p.id, events);
+      setStatus('Synced just now.', 'ok');
+      return;
+    }catch(e){
+      // fall through to backup source below
+    }
   }
+
+  if(p.gcalIcalUrl){
+    try{
+      const res = await fetch(p.gcalIcalUrl, {mode:'cors'});
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const text = await res.text();
+      const events = parseICS(text).map(e => Object.assign(e, {propertyId:p.id, uid: p.id+':gcal:'+e.uid}));
+      await mergeReservations(p.id, events);
+      setStatus('Airbnb sync was blocked — used the Google Calendar backup instead.', 'ok');
+      return;
+    }catch(e){
+      // both sources failed
+    }
+  }
+
+  setStatus("Couldn't reach the latest booking data — showing the last synced version.", 'err');
 }
 
 async function syncAll(){
   for(let idx=0; idx<config.properties.length; idx++){
-    if(config.properties[idx].icalUrl) await syncOne(idx);
+    const p = config.properties[idx];
+    if(p.icalUrl || p.gcalIcalUrl) await syncOne(idx);
   }
 }
 
